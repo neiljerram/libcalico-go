@@ -13,33 +13,3 @@
 // limitations under the License.
 
 package compat
-
-import (
-	log "github.com/sirupsen/logrus"
-
-	"github.com/projectcalico/libcalico-go/lib/backend/model"
-)
-
-// ToTagsLabelsRules converts a Profile KVPair to separate KVPair types for Keys,
-// Labels and Rules. These separate KVPairs are used to write three separate objects
-// that make up a single profile.
-func ToTagsLabelsRules(d *model.KVPair) (t, l, r *model.KVPair) {
-	log.Infof("d.Value is %#v", d.Value)
-	p := d.Value.(*model.Profile)
-	pk := d.Key.(model.ProfileKey)
-
-	t = &model.KVPair{
-		Key:   model.ProfileTagsKey{pk},
-		Value: p.Tags,
-	}
-	l = &model.KVPair{
-		Key:   model.ProfileLabelsKey{pk},
-		Value: p.Labels,
-	}
-	r = &model.KVPair{
-		Key:   model.ProfileRulesKey{pk},
-		Value: &p.Rules,
-	}
-
-	return t, l, r
-}

@@ -19,9 +19,10 @@ import (
 	"time"
 
 	"github.com/projectcalico/libcalico-go/lib/backend/api"
-	"github.com/projectcalico/libcalico-go/lib/backend/compat"
 	"github.com/projectcalico/libcalico-go/lib/backend/k8s/resources"
 	"github.com/projectcalico/libcalico-go/lib/backend/model"
+	"github.com/projectcalico/libcalico-go/lib/backend/syncersv1/updateprocessors"
+	"github.com/projectcalico/libcalico-go/lib/backend/watchersyncer"
 	log "github.com/sirupsen/logrus"
 
 	k8sapi "k8s.io/api/core/v1"
@@ -189,6 +190,7 @@ func newSyncer(kubeAPI kubeAPI, converter Converter, callbacks api.SyncerCallbac
 		stopChan:        make(chan int),
 		openWatchers:    map[string]watch.Interface{},
 	}
+	syn.profileUpdateProcessor = updateprocessors.NewProfileUpdateProcessor()
 	return syn
 }
 
@@ -207,6 +209,8 @@ type kubeSyncer struct {
 	// Trackers is a map from individual resource keys (KEY_*) to the tracking map
 	// used to track sync state for that resource.
 	trackers map[string]map[string]model.Key
+
+	profileUpdateProcessor watchersyncer.SyncerUpdateProcessor
 }
 
 // Holds resource version information.
@@ -644,15 +648,16 @@ func (syn *kubeSyncer) performSnapshot(versions *resourceVersions) (map[string][
 				if err != nil {
 					log.Panicf("%s", err)
 				}
-				rules, tags, labels := compat.ToTagsLabelsRules(profile)
-				rules.Revision = profile.Revision
-				tags.Revision = profile.Revision
-				labels.Revision = profile.Revision
-
-				snap[KEY_NS] = append(snap[KEY_NS], *rules, *tags, *labels)
-				keys[KEY_NS][rules.Key.String()] = true
-				keys[KEY_NS][tags.Key.String()] = true
-				keys[KEY_NS][labels.Key.String()] = true
+				updates, err := syn.profileUpdateProcessor.Process(profile)
+				if err != nil {
+					log.Panicf("%s", err)
+				}
+				for _, update := range updates {
+					kvp := *update
+					kvp.Revision = profile.Revision
+					snap[KEY_NS] = append(snap[KEY_NS], kvp)
+					keys[KEY_NS][kvp.Key.String()] = true
+				}
 			}
 		}
 
@@ -896,20 +901,19 @@ func (syn *kubeSyncer) parseNamespaceEvent(e watch.Event) []model.KVPair {
 	if err != nil {
 		log.Panicf("%s", err)
 	}
-	rules, tags, labels := compat.ToTagsLabelsRules(profile)
-	rules.Revision = profile.Revision
-	tags.Revision = profile.Revision
-	labels.Revision = profile.Revision
-
-	// For deletes, we need to nil out the Value part of the KVPair.
-	if e.Type == watch.Deleted {
-		rules.Value = nil
-		tags.Value = nil
-		labels.Value = nil
+	updates, err := syn.profileUpdateProcessor.Process(profile)
+	if err != nil {
+		log.Panicf("%s", err)
 	}
-
-	// Return the updates.
-	return []model.KVPair{*rules, *tags, *labels}
+	var kvps []model.KVPair
+	for _, update := range updates {
+		kvp := *update
+		if e.Type == watch.Deleted {
+			kvp.Value = nil
+		}
+		kvps = append(kvps, kvp)
+	}
+	return kvps
 }
 
 func splitNode(node *k8sapi.Node) (*model.KVPair, *model.KVPair) {
