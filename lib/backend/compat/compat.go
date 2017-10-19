@@ -287,6 +287,7 @@ func (c *ModelAdaptor) getProfile(ctx context.Context, k model.Key) (*model.KVPa
 		},
 		Revision: t.Revision,
 	}
+	log.Infof("d.Value is %#v", d.Value)
 	p := d.Value.(*model.Profile)
 	if l, err = c.client.Get(ctx, model.ProfileLabelsKey{pk}, ""); err == nil {
 		p.Labels = l.Value.(map[string]string)
@@ -519,6 +520,7 @@ func (c *ModelAdaptor) applyOrDeleteSubcomponents(ctx context.Context, component
 // Labels and Rules. These separate KVPairs are used to write three separate objects
 // that make up a single profile.
 func ToTagsLabelsRules(d *model.KVPair) (t, l, r *model.KVPair) {
+	log.Infof("d.Value is %#v", d.Value)
 	p := d.Value.(*model.Profile)
 	pk := d.Key.(model.ProfileKey)
 

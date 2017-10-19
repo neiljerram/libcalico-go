@@ -75,6 +75,7 @@ func (c ProfileConverter) ConvertAPIToKVPair(a unversioned.Resource) (*model.KVP
 // ConvertKVPairToAPI converts a KVPair containing a backend Profile and ProfileKey
 // to an API Profile structure.
 func (c ProfileConverter) ConvertKVPairToAPI(d *model.KVPair) (unversioned.Resource, error) {
+	log.Infof("d.Value is %#v", d.Value)
 	bp := d.Value.(*model.Profile)
 	bk := d.Key.(model.ProfileKey)
 
