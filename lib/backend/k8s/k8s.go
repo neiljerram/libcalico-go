@@ -421,31 +421,42 @@ func (c *KubeClient) Get(ctx context.Context, k model.Key, revision string) (*mo
 // no entries matching the request in the ListInterface.
 func (c *KubeClient) List(ctx context.Context, l model.ListInterface, revision string) (*model.KVPairList, error) {
 	log.Debugf("Performing 'List' for %+v %v", l, reflect.TypeOf(l))
-	switch l.(model.ResourceListOptions).Kind {
-	case apiv2.KindProfile:
-		return c.listProfiles(ctx, l.(model.ResourceListOptions), revision)
-	case apiv2.KindWorkloadEndpoint:
-		return c.listWorkloadEndpoints(ctx, l.(model.ResourceListOptions), revision)
-	case apiv2.KindGlobalNetworkPolicy, apiv2.KindNetworkPolicy:
-		return c.listPolicies(ctx, l.(model.ResourceListOptions), revision)
-	case apiv2.KindIPPool:
-		return c.ipPoolClient.List(ctx, l, revision)
-	case apiv2.KindBGPPeer:
-		return c.bgpPeerClient.List(ctx, l, revision)
-	case apiv2.KindBGPConfiguration:
-		return c.bgpConfigClient.List(ctx, l, revision)
-	case apiv2.KindFelixConfiguration:
+	switch l := l.(type) {
+	case model.ResourceListOptions:
+		switch l.Kind {
+		case apiv2.KindProfile:
+			return c.listProfiles(ctx, l, revision)
+		case apiv2.KindWorkloadEndpoint:
+			return c.listWorkloadEndpoints(ctx, l, revision)
+		case apiv2.KindGlobalNetworkPolicy, apiv2.KindNetworkPolicy:
+			return c.listPolicies(ctx, l, revision)
+		case apiv2.KindIPPool:
+			return c.ipPoolClient.List(ctx, l, revision)
+		case apiv2.KindBGPPeer:
+			return c.bgpPeerClient.List(ctx, l, revision)
+		case apiv2.KindBGPConfiguration:
+			return c.bgpConfigClient.List(ctx, l, revision)
+		case apiv2.KindFelixConfiguration:
+			return c.felixConfigClient.List(ctx, l, revision)
+		case apiv2.KindClusterInformation:
+			return c.clusterInfoClient.List(ctx, l, revision)
+		case apiv2.KindNode:
+			return c.nodeClient.List(ctx, l, revision)
+		default:
+			return &model.KVPairList{
+				KVPairs:  []*model.KVPair{},
+				Revision: revision,
+			}, nil
+		}
+	case model.GlobalConfigListOptions:
 		return c.felixConfigClient.List(ctx, l, revision)
-	case apiv2.KindClusterInformation:
-		return c.clusterInfoClient.List(ctx, l, revision)
-	case apiv2.KindNode:
-		return c.nodeClient.List(ctx, l, revision)
 	default:
-		return &model.KVPairList{
-			KVPairs:  []*model.KVPair{},
-			Revision: revision,
-		}, nil
+		log.Panicf("Unexpected model.ListInterface type %#v", l)
 	}
+	return &model.KVPairList{
+		KVPairs:  []*model.KVPair{},
+		Revision: revision,
+	}, nil
 }
 
 // listProfiles lists Profiles from the k8s API based on existing Namespaces.
