@@ -43,6 +43,8 @@ type Interface interface {
 	BGPConfigurations() BGPConfigurationInterface
 	// FelixConfigurations returns an interface for managing the Felix configuration resources.
 	FelixConfigurations() FelixConfigurationInterface
+	// FelixStatusReports returns an interface for managing Felix status reports.
+	FelixStatusReports() FelixStatusReportInterface
 	// ClusterInformation returns an interface for managing the cluster information resource.
 	ClusterInformation() ClusterInformationInterface
 	// EnsureInitialized is used to ensure the backend datastore is correctly

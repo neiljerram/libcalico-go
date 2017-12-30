@@ -128,6 +128,11 @@ func (c client) FelixConfigurations() FelixConfigurationInterface {
 	return felixConfigurations{client: c}
 }
 
+// FelixStatusReports returns an interface for managing Felix status reports.
+func (c client) FelixStatusReports() FelixStatusReportInterface {
+	return felixStatusReports{client: c}
+}
+
 // ClusterInformation returns an interface for managing the cluster information resource.
 func (c client) ClusterInformation() ClusterInformationInterface {
 	return clusterInformation{client: c}

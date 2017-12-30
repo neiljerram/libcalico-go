@@ -74,6 +74,11 @@ func init() {
 		reflect.TypeOf(apiv3.FelixConfiguration{}),
 	)
 	registerResourceInfo(
+		apiv3.KindFelixStatusReport,
+		"felixstatusreports",
+		reflect.TypeOf(apiv3.FelixStatusReport{}),
+	)
+	registerResourceInfo(
 		apiv3.KindGlobalNetworkPolicy,
 		"globalnetworkpolicies",
 		reflect.TypeOf(apiv3.GlobalNetworkPolicy{}),
